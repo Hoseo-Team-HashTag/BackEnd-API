@@ -9,6 +9,7 @@ function signup(req, res) {
     const paramPassword = req.body.password;
 
     mysql.pool.getConnection((err, conn)=> {
+        console.log(err)
         if(err){
             conn.release()
             console.log('Mysql getConnection error. aborted')

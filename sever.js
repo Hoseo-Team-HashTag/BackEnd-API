@@ -1,7 +1,8 @@
 const express = require('express')
 const path = require('path')
 const static = require('serve-static') // 값을 숨기기 위해 사용
-const port = 3000
+require("dotenv").config();
+const port = process.env.PORT
 
 const signup = require("./router/account/signup.js")
 
