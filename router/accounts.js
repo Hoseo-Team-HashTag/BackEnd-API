@@ -72,7 +72,65 @@ router.post('/signUp', (req, res) => { //회원가입 POST (요청)
     })
 })
 
+router.post('/login', (req, res) => { // 로그인 Login (요청)
+    const userEmail = req.body.userEmail;
+    const userPW = req.body.userPW;
 
+    mysql.pool.getConnection((err, conn)=> {
+        if(err) {
+            conn.release();
+            console.log('Mysql getConnection error. aborted');
+            //res.end();
+            return res.status(200).json({ // 200 말고 다른 값도 사용해야하는지
+                signUpResult : -1
+            })
+        }
+
+        conn.query("SELECT COUNT(*) AS count FROM accounts WHERE userEmail = ?",[userEmail],(err,result)=>{
+            conn.release();
+            if(err) {
+                console.log("---- [로그인.1]ID판단 SQL문 작동중 에러 발생 ----");
+                console.log(err);
+                console.log("--------------------");
+                return res.status(200).json({
+                    signUpResult : -1
+                });
+            }
+            if(result[0].count == 0) {
+                console.log("로그인 실패 (존재하지 않는 이메일)");
+                return res.status(200).json({
+                    signUpResult : 2
+                });
+            } else {
+                const hashUserPW = hash(userPW); 
+
+                conn.query("SELECT userPW FROM accounts WHERE userEmail = ?",[userEmail],(err,result)=>{
+                    conn.release();
+                    if(err) {
+                        console.log("---- [로그인.2]로그인중 SQL문 작동 에러 발생 ----");
+                        console.log(err);
+                        console.log("--------------------");
+                        return res.status(200).json({
+                            signUpResult : -1
+                        });
+                    }
+
+                    if(hashUserPW != result[0].userPW) {
+                        console.log("로그인 실패 (비밀번호가 일치하지 않습니다.)");
+                        return res.status(200).json({
+                            loginResult : 1
+                        });
+                    } else {
+                        console.log("로그인 성공! [Email : " + userEmail + "]");
+                        return res.status(200).json({
+                            signUpResult : 0
+                        });
+                    }
+                });
+            }
+        })
+    })
+});
 
 
 router.post('/', (req, res) => {
@@ -81,10 +139,6 @@ router.post('/', (req, res) => {
         msg : "테스트",
         data1 : req.body.content
     })
-})
-
-router.post('/hello',(req,res)=> {
-    console.log("Hello")
-})
+});
 
 module.exports = router;
