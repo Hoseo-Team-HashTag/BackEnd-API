@@ -2,9 +2,10 @@ const express = require('express')
 const path = require('path')
 const static = require('serve-static') // 값을 숨기기 위해 사용
 require("dotenv").config();
+
 const port = process.env.PORT
 
-const signup = require("./router/account/signup.js")
+const signup = require("./func/account/signup.js")
 
 const app = express()
 app.use(express.urlencoded({extended:true})) // url을 전송에 유리한 형태로 바꾸는 것을 허용
