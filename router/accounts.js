@@ -8,10 +8,10 @@ const mysql = require("../func/mysql/mysql.js")
 require("dotenv").config();
 
 function hash(password) { // HMAC SHA256으로 비밀번호를 비밀키와 함께 해싱 후 값 리턴(해시)
-    return crypto.createHmac('sha256',process.env.SECRET_KEY).update(password).digest('hex')
+    return crypto.createHmac('sha256',process.env.SECRET_KEY).update(password).digest('hex');
 }
 
-function randomLink() {
+function randomLink() { //비밀번호 초기화서 유저에게 별도의 token 생성 코드 (crypto로 대체가능)
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const charactersLength = characters.length;
     const num = Math.floor(Math.random()*11)+10;
@@ -36,7 +36,7 @@ router.post('/signUp', (req, res) => { //회원가입 POST (요청)
             //res.end();
             return res.status(200).json({ // 200 말고 다른 값도 사용해야하는지
                 signUpResult : -1
-            })
+            });
         }
 
         conn.query("SELECT COUNT(*) AS count FROM accounts WHERE userEmail = ?",[userEmail],(err,result)=>{
@@ -99,7 +99,7 @@ router.post('/login', (req, res) => { // 로그인 Login (요청)
             //res.end();
             return res.status(200).json({ // 200 말고 다른 값도 사용해야하는지
                 signUpResult : -1
-            })
+            });
         }
 
         conn.query("SELECT COUNT(*) AS count FROM accounts WHERE userEmail = ?",[userEmail],(err,result)=>{
@@ -160,7 +160,7 @@ router.post('/pwsearch', (req,res) => { // 비밀번호 찾기 POST(비번, 암�
             //res.end();
             return res.status(200).json({ // 200 말고 다른 값도 사용해야하는지
                 emailSystemResult : -1
-            })
+            });
         }
 
         conn.query("SELECT COUNT(*) AS count FROM accounts WHERE userEmail = ?",[userEmail],(err,result)=>{
@@ -180,11 +180,15 @@ router.post('/pwsearch', (req,res) => { // 비밀번호 찾기 POST(비번, 암�
                 });
             } else {
                 const linkCode = randomLink();
-                const link = "http://127.0.0.1:3000/accounts/pwsearch/" + linkCode;
+                const link = "http://localhost:8000/NewPassword/" + linkCode;
                 const userEmail = req.body.userEmail;
                 const reqTime = new Date();
+                //console.log(Date.now())
                 let mailOptions = {
-                    from : process.env.ADMIN_EMAIL,
+                    from : {
+                        name : "HappyTime",
+                        address : process.env.ADMIN_EMAIL
+                    },
                     to : userEmail,
                     subject : "[HappyTime] 비밀번호 초기화 링크 관련 이메일 입니다.",
                     html : `<p>[HappyTime] 비밀번호 초기화 링크 관련 이메일 입니다.</p>
