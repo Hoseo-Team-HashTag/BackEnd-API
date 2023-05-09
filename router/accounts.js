@@ -2,12 +2,24 @@ const express = require("express")
 const router = express.Router()
 const crypto = require("crypto")
 
+const {smtpTransport} = require("../config/email.js")
 const mysql = require("../func/mysql/mysql.js")
 
 require("dotenv").config();
 
 function hash(password) { // HMAC SHA256으로 비밀번호를 비밀키와 함께 해싱 후 값 리턴(해시)
     return crypto.createHmac('sha256',process.env.SECRET_KEY).update(password).digest('hex')
+}
+
+function randomLink() {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    const num = Math.floor(Math.random()*11)+10;
+    let result = '';
+    for(let i = 0; i < num; i++) {
+        result += characters.charAt(Math.floor(Math.random()*charactersLength));
+    }
+    return result;
 }
 
 // 회원가입 return 값
@@ -136,6 +148,70 @@ router.post('/login', (req, res) => { // 로그인 Login (요청)
     })
 });
 
+// 비밀번호 찾기 리턴값
+// 0->전송 성공, 1->존재하지 않는 이메일, -1->서버오류로 인한 전송실패
+router.post('/pwsearch', (req,res) => { // 비밀번호 찾기 POST(비번, 암호, 찾기)
+    const userEmail = req.body.userEmail;
+
+    mysql.pool.getConnection((err, conn)=> {
+        if(err) {
+            conn.release();
+            console.log('Mysql getConnection error. aborted');
+            //res.end();
+            return res.status(200).json({ // 200 말고 다른 값도 사용해야하는지
+                emailSystemResult : -1
+            })
+        }
+
+        conn.query("SELECT COUNT(*) AS count FROM accounts WHERE userEmail = ?",[userEmail],(err,result)=>{
+            conn.release();
+            if(err) {
+                console.log("---- [비밀번호 찾기.1]ID판단 SQL문 작동중 에러 발생 ----");
+                console.log(err);
+                console.log("--------------------");
+                return res.status(200).json({
+                    emailSystemResult : -1
+                });
+            }
+            if(result[0].count == 0) {
+                console.log("이메일 전송 실패 (존재하지 않는 이메일)");
+                return res.status(200).json({
+                    emailSystemResult : 1
+                });
+            } else {
+                const linkCode = randomLink();
+                const link = "http://127.0.0.1:3000/accounts/pwsearch/" + linkCode;
+                const userEmail = req.body.userEmail;
+                const reqTime = new Date();
+                let mailOptions = {
+                    from : process.env.ADMIN_EMAIL,
+                    to : userEmail,
+                    subject : "[HappyTime] 비밀번호 초기화 링크 관련 이메일 입니다.",
+                    html : `<p>[HappyTime] 비밀번호 초기화 링크 관련 이메일 입니다.</p>
+                    <p><br>비밀번호 초기화 요청 시간 : ${reqTime}<br></p>
+                    <p><br>사이트 접속 전 꼭 본인이 직접 비밀번호 초기화를 신청하였는지 확인 후 접속해주세요.</p>
+                    <a href="${link}">비밀번호 초기화 링크 바로가기</a>`
+                };
+
+                smtpTransport.sendMail(mailOptions, (err,info) => {
+                    if(err) {
+                        console.log("---- 이메일 전송 실패 (SMTP 오류) ----");
+                        console.log(err)
+                        console.log("--------------------");
+                        return res.status(200).json({
+                            emailSystemResult : -1
+                        });
+                    } else {
+                        console.log("[비밀번호 찾기 메일 전송완료] Email sent : " + info.response);
+                        return res.status(200).json({
+                            emailSystemResult : 0
+                        });
+                    }
+                });
+            }
+        })
+    })
+});
 
 router.post('/', (req, res) => {
     console.log("Accounts.js 접근 Data : " + req.body.content + "/" + req.body.d);
