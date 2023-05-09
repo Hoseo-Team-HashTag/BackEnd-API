@@ -6,10 +6,12 @@ const mysql = require("../func/mysql/mysql.js")
 
 require("dotenv").config();
 
-function hash(password) { // HMAC SHA256으로 비밀번호를 비밀키와 함께 해싱 후 값 리턴
+function hash(password) { // HMAC SHA256으로 비밀번호를 비밀키와 함께 해싱 후 값 리턴(해시)
     return crypto.createHmac('sha256',process.env.SECRET_KEY).update(password).digest('hex')
 }
 
+// 회원가입 return 값
+// -1 SQL 에러 , 0 회원가입 완료 , 1 중복된 이메일(회원가입 실패)
 router.post('/signUp', (req, res) => { //회원가입 POST (요청)
     const userEmail = req.body.userEmail;
     const userPW = req.body.userPW;
@@ -72,6 +74,8 @@ router.post('/signUp', (req, res) => { //회원가입 POST (요청)
     })
 })
 
+// 로그인 return 값
+// -1 SQL 에러 , 0 로그인 성공 , 1 로그인 실패 (비밀번호 틀림) , 2 로그인 실패 (존재하지 않는 이메일)
 router.post('/login', (req, res) => { // 로그인 Login (요청)
     const userEmail = req.body.userEmail;
     const userPW = req.body.userPW;
@@ -93,13 +97,13 @@ router.post('/login', (req, res) => { // 로그인 Login (요청)
                 console.log(err);
                 console.log("--------------------");
                 return res.status(200).json({
-                    signUpResult : -1
+                    loginResult : -1
                 });
             }
             if(result[0].count == 0) {
                 console.log("로그인 실패 (존재하지 않는 이메일)");
                 return res.status(200).json({
-                    signUpResult : 2
+                    loginResult : 2
                 });
             } else {
                 const hashUserPW = hash(userPW); 
@@ -111,7 +115,7 @@ router.post('/login', (req, res) => { // 로그인 Login (요청)
                         console.log(err);
                         console.log("--------------------");
                         return res.status(200).json({
-                            signUpResult : -1
+                            loginResult : -1
                         });
                     }
 
@@ -123,7 +127,7 @@ router.post('/login', (req, res) => { // 로그인 Login (요청)
                     } else {
                         console.log("로그인 성공! [Email : " + userEmail + "]");
                         return res.status(200).json({
-                            signUpResult : 0
+                            loginResult : 0
                         });
                     }
                 });
