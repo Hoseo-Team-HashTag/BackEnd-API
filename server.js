@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
 const path = require('path')
+const cookieParser = require('cookie-parser')
 const static = require('serve-static') // 값을 숨기기 위해 사용
 const cors = require('cors')
 
@@ -16,8 +17,9 @@ app.use(cors({
     credentials: true,
 }))
 
-app.use(express.urlencoded({extended:true})) // url을 전송에 유리한 형태로 바꾸는 것을 허용
-app.use(express.json()) 
+app.use(express.urlencoded({extended:true})); // url을 전송에 유리한 형태로 바꾸는 것을 허용
+app.use(express.json());
+app.use(cookieParser());
 
 app.use('/public', static(path.join(__dirname, 'public')))// 서버가 public이라는 디렉토리를 사용, __dirname -> 현재디렉토리(.과 동일)
 app.use("/", indexRouter)
