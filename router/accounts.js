@@ -182,8 +182,11 @@ router.post('/pwsearch', (req,res) => { // 비밀번호 찾기 POST(비번, 암�
                 const linkCode = randomLink();
                 const link = "http://localhost:8000/NewPassword/" + linkCode;
                 const userEmail = req.body.userEmail;
-                const reqTime = new Date();
-                //console.log(Date.now())
+                const reqTime =  {
+                    nowTime :new Date(),
+                    msTime : Date.now()
+                };
+                const ttl = 300;
                 let mailOptions = {
                     from : {
                         name : "HappyTime",
@@ -192,7 +195,7 @@ router.post('/pwsearch', (req,res) => { // 비밀번호 찾기 POST(비번, 암�
                     to : userEmail,
                     subject : "[HappyTime] 비밀번호 초기화 링크 관련 이메일 입니다.",
                     html : `<p>[HappyTime] 비밀번호 초기화 링크 관련 이메일 입니다.</p>
-                    <p><br>비밀번호 초기화 요청 시간 : ${reqTime}<br></p>
+                    <p><br>비밀번호 초기화 요청 시간 : ${reqTime.nowTime}<br></p>
                     <p><br>사이트 접속 전 꼭 본인이 직접 비밀번호 초기화를 신청하였는지 확인 후 접속해주세요.</p>
                     <a href="${link}">비밀번호 초기화 링크 바로가기</a>`
                 };
@@ -206,23 +209,137 @@ router.post('/pwsearch', (req,res) => { // 비밀번호 찾기 POST(비번, 암�
                             emailSystemResult : -1
                         });
                     } else {
-                        console.log("[비밀번호 찾기 메일 전송완료] Email sent : " + info.response);
-                        return res.status(200).json({
-                            emailSystemResult : 0
+                        conn.query("SELECT COUNT(*) AS count FROM searchpw WHERE userEmail = ?",[userEmail],(err,result)=>{
+                            conn.release();
+                            if(err) {
+                                console.log("---- [비밀번호 찾기.2]ID판단 SQL문 작동중 에러 발생 ----");
+                                console.log(err);
+                                console.log("--------------------");
+                                return res.status(200).json({
+                                    emailSystemResult : -1
+                                });
+                            }
+                            if(result[0].count == 1) {
+                                console.log("TOKEN값을 지급받은 이력이 있어 해당 데이터 갱신합니다.")
+                                conn.query("UPDATE searchpw SET Token=?,TTL=?,reqTime=? WHERE userEmail=?",[linkCode,ttl,reqTime.msTime,userEmail],(err,result)=>{
+                                    conn.release();
+                                    if(err || !result) {
+                                        console.log("---- [비밀번호 찾기.3]searchPW 갱신 SQL문 작동중 에러 발생 ----");
+                                        console.log(err);
+                                        console.log("--------------------");
+                                        return res.status(200).json({
+                                            emailSystemResult : -1
+                                        });
+                                    }
+                                });
+                            } else {
+                                conn.query('INSERT into searchpw (userEmail, Token, TTL, reqTime) values (?,?,?,?);',[userEmail, linkCode, ttl, reqTime.msTime],(err, result)=> {
+                                    conn.release();
+                                    if(err || !result) {
+                                        console.log("---- [비밀번호 찾기.3]데이터 삽입 SQL문 작동중 에러 발생 ----");
+                                        console.log(err);
+                                        console.log("--------------------");
+                                        return res.status(200).json({
+                                            emailSystemResult : -1
+                                        });
+                                    }
+                                });
+                            }
+                            console.log(Date.now());
+                            console.log("[비밀번호 찾기 메일 전송완료] Email sent : " + info.response);
+                            return res.status(200).json({
+                                 emailSystemResult : 0
+                            });
                         });
                     }
                 });
             }
-        })
+        });
     })
 });
 
-router.post('/', (req, res) => {
-    console.log("Accounts.js 접근 Data : " + req.body.content + "/" + req.body.d);
-    return res.status(200).json({
-        msg : "테스트",
-        data1 : req.body.content
-    })
+//비밀번호 최기화 리턴값
+// 0-> 초기화 성공, 1-> 유효하지 않는 토큰, -1->서버오류로 인한 전송실패
+router.post('/NewPassword/:userToken', (req,res) => {
+    const { userToken } = req.params;
+    const userNewPassword = req.body.userPW;
+    let deleteData = 0; // MySQL Data Delete를 위한 변수로  1 = TTL 만료 / 0 = 성공적인 삭제
+    console.log(Date.now());
+    mysql.pool.getConnection((err,conn)=> {
+        if(err) {
+            conn.release();
+            console.log("MySql get Connection error. aborted");
+            return res.status(200).json({
+               resetResult : -1 
+            });
+        }
+        conn.query("SELECT COUNT(*) AS count FROM searchpw WHERE Token = ?",[userToken],(err,result)=> {
+            conn.release();
+            if(err) {
+                console.log("---- [비밀번호 초기화.1] SQL문 작동중 에러 발생 ----");
+                console.log(err);
+                console.log("--------------------");
+                return res.status(200).json({
+                    resetResult : -1
+                });
+            }
+            if(result[0].count != 1) {
+                console.log("[비밀번호 초기화] 존재하지 않는 토큰입니다.");
+                return res.status(200).json({
+                    resetResult : 1
+                });
+            } else {
+                conn.query("SELECT * FROM searchpw WHERE Token = ?",[userToken],(err,result)=>{
+                    conn.release();
+                    if(err) {
+                        console.log("---- [비밀번호 초기화.2] TTL 판단 SQL문 작동중 에러 발생 ----");
+                        console.log(err);
+                        console.log("--------------------");
+                        return res.status(200).json({
+                            resetResult : -1
+                        });
+                    }
+                    if((parseInt(result[0].reqTime)+(parseInt(result[0].TTL)*1000)) <= parseInt(Date.now())) {
+                        console.log("유효시간이 경과 되었습니다.");
+                        deleteData = 1;
+                    } else {
+                        const hashUserPW = hash(userNewPassword); 
+                        conn.query("UPDATE accounts SET userPW = ? WHERE userEmail = ?", [hashUserPW, result[0].userEmail],(err,result)=>{
+                            if(err || !result) {
+                                console.log("---- [비밀번호 초기화.3] 비밀번호 변경 SQL문 작동중 에러 발생 ----");
+                                console.log(err);
+                                console.log("--------------------");
+                                return res.status(200).json({
+                                    resetResult : -1
+                                });
+                            }
+                            deleteData = 0;
+                        });
+                    }
+                    conn.query("DELETE FROM searchpw WHERE Token = ?",[userToken],(err,result)=>{
+                        conn.release();
+                        if(err || !result) {
+                            console.log("---- [비밀번호 초기화.4] searchpw 데이터 삭제 SQL문 작동중 에러 발생 ----");
+                            console.log(err);
+                            console.log("--------------------");
+                            return res.status(200).json({
+                                resetResult : -1
+                            });
+                        }
+                        if(deleteData == 1) {
+                            return res.status(200).json({
+                                resetResult : 1
+                            });
+                        } else if(deleteData == 0) {
+                            return res.status(200).json({
+                                resetResult : 0
+                            });
+                        }
+                    });
+                });
+            }
+        });
+    });
 });
 
 module.exports = router;
