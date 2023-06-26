@@ -16,29 +16,27 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `schedule`
+-- Table structure for table `accounts`
 --
 
-DROP TABLE IF EXISTS `schedule`;
+DROP TABLE IF EXISTS `accounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `schedule` (
-  `t_id` int NOT NULL AUTO_INCREMENT COMMENT '게시물 번호, 자동증가',
-  `t_user` varchar(255) NOT NULL COMMENT '일정을 생성한 사용자의 이름',
-  `event` varchar(255) NOT NULL COMMENT '일정의 내용을 저장',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '일정이 생성된 시간을 저장하는 타임스탬프, 새로운 레코드가 삽입될때 자동으로 현재시간으로 설정',
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '일정이 마지막으로 수정된 시간을 저장하는 타임스팸프, 레코드가 업데이트 될때마다 자동으로 현재시간으로 설정',
-  PRIMARY KEY (`t_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=euckr;
+CREATE TABLE `accounts` (
+  `userEmail` varchar(255) NOT NULL COMMENT '사용자 로그인 아이디',
+  `userPW` varchar(255) NOT NULL COMMENT '로그인 암호, 패스워드',
+  `userName` varchar(255) NOT NULL COMMENT '사용자 이름',
+  PRIMARY KEY (`userEmail`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `schedule`
+-- Dumping data for table `accounts`
 --
 
-LOCK TABLES `schedule` WRITE;
-/*!40000 ALTER TABLE `schedule` DISABLE KEYS */;
-/*!40000 ALTER TABLE `schedule` ENABLE KEYS */;
+LOCK TABLES `accounts` WRITE;
+/*!40000 ALTER TABLE `accounts` DISABLE KEYS */;
+/*!40000 ALTER TABLE `accounts` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -50,4 +48,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-04-28 17:26:14
+-- Dump completed on 2023-05-04  4:06:00
