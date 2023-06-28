@@ -1,9 +1,10 @@
 const express = require("express")
 const router = express.Router()
 const crypto = require("crypto")
+const jwt = require("jsonwebtoken")
 
 const {smtpTransport} = require("../config/email.js")
-const mysql = require("../func/mysql/mysql.js")
+const mysql = require("../func/mysql.js")
 
 require("dotenv").config();
 
@@ -137,9 +138,25 @@ router.post('/login', (req, res) => { // 로그인 Login (요청)
                             loginResult : 1
                         });
                     } else {
+                        const accessToken = jwt.sign({
+                            email : userEmail
+                        }, process.env.ACCESS_SECRET, {
+                            expiresIn : '5m',
+                            issuer : 'HappyTime'
+                        });
+                        
+                        const refreshToken = jwt.sign({
+                            email : userEmail
+                        }, process.env.REFRESH_SECRET, {
+                            expiresIn : '24h',
+                            issuer : 'HappyTime'
+                        });
+
                         console.log("로그인 성공! [Email : " + userEmail + "]");
                         return res.status(200).json({
-                            loginResult : 0
+                            loginResult : 0,
+                            accessToken : accessToken,
+                            refreshToken : refreshToken
                         });
                     }
                 });
