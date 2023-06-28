@@ -9,8 +9,9 @@ require("dotenv").config();
 
 const port = process.env.PORT
 
-const indexRouter = require("./router")
-const accountRouter = require("./router/accounts")
+const indexRouter = require("./router");
+const accountRouter = require("./router/accounts");
+const tokenRouter = require("./router/token");
 
 app.use(cors({
     origin: 'http://localhost:8000',
@@ -22,8 +23,9 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use('/public', static(path.join(__dirname, 'public')))// 서버가 public이라는 디렉토리를 사용, __dirname -> 현재디렉토리(.과 동일)
-app.use("/", indexRouter)
-app.use("/accounts",accountRouter)
+app.use("/", indexRouter);
+app.use("/accounts",accountRouter);
+app.use("/token",tokenRouter);
 
 app.use((req, res, next) => {
     res.status(404).send("존재하지 않는 주소입니다. 주소를 다시 확인해주세요.")

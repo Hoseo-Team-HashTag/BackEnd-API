@@ -153,18 +153,10 @@ router.post('/login', (req, res) => { // 로그인 Login (요청)
                         });
 
                         console.log("로그인 성공! [Email : " + userEmail + "]");
-
-                        res.cookie("accessToken", accessToken, {
-                            secure : false,
-                            httpOnly : true
-                        });
-
-                        res.cookie("refreshToken", refreshToken, {
-                            secure : false,
-                            httpOnly : true
-                        });
                         return res.status(200).json({
                             loginResult : 0,
+                            accessToken : accessToken,
+                            refreshToken : refreshToken
                         });
                     }
                 });
