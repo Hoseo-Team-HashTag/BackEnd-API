@@ -2,7 +2,7 @@ const express = require("express")
 const router = express.Router()
 const jwt = require("jsonwebtoken")
 
-const mysql = require("../func/mysql/mysql.js")
+const mysql = require("../func/mysql.js")
 require("dotenv").config();
 router.post('/refreshToken',(req,res)=>{
     try {

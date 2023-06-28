@@ -4,7 +4,7 @@ const crypto = require("crypto")
 const jwt = require("jsonwebtoken")
 
 const {smtpTransport} = require("../config/email.js")
-const mysql = require("../func/mysql/mysql.js")
+const mysql = require("../func/mysql.js")
 
 require("dotenv").config();
 
