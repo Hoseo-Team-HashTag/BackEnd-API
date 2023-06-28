@@ -1,3 +1,6 @@
+const mysql = require("../func/mysql.js")
+const jwt = require("jsonwebtoken")
+//(0->문제없음 / 1-> 토큰에 이상이있음(유효기간 만료 혹은 올바르지 않은 토큰)
 const authJWT = (req,res,next) => {
     try {
         const userToken = req.body.accessToken;
@@ -6,7 +9,7 @@ const authJWT = (req,res,next) => {
             if(err) {
                 conn.release();
                 console.log('Mysql getConnection error. aborted');
-                return res.status(200).json({ 
+                return res.status(500).json({ 
                     tokenResult : 1
                 });
             }
@@ -15,15 +18,13 @@ const authJWT = (req,res,next) => {
                 if(err || !result) {
                     console.log("---- [loginSuccess.1] User Data Error ----\n" + err + "\n--------------------");
                     console.log("---- [loginSuccess.1] User Data Error ----\n" + result + "\n--------------------");
-                    return res.status(200).json({
+                    return res.status(500).json({
                         tokenResult : 1
                     });                    
                 }
-                return res.status(200).json({
-                    tokenResult : 0,
-                    userEmail : result[0].userEmail,
-                    userName : result[0].userName
-                });
+                req.userEmail = result[0].userEmail;
+                req.userName = result[0].userName;
+                next();
             });
     });
     } catch(error) {
