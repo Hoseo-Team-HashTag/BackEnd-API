@@ -1,5 +1,5 @@
 const express = require("express")
-const mysql = require("../func/mysql/mysql.js")
+const mysql = require("../func/mysql.js")
 const router = express.Router()
 
 router.post('/Calendar', (req, res) => {
